@@ -1,0 +1,96 @@
+<section class="page-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h1 class="section-title">Noticias y Avisos</h1>
+      <p class="section-subtitle">Mantente informado sobre las actividades, avisos y comunicados del Ayuntamiento</p>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-box" *ngIf="cargando()">
+      <div class="spinner"></div>
+      <p>Cargando noticias...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" *ngIf="error()">
+      <p>{{ error() }}</p>
+      <button class="btn-reintentar" (click)="cargarDatos()">Reintentar</button>
+    </div>
+
+    <div *ngIf="!cargando() && !error()">
+
+      <!-- Destacadas -->
+      <div class="destacadas-section" *ngIf="destacadas().length > 0">
+        <h2 class="subsection-title">Destacadas</h2>
+        <div class="destacadas-grid">
+          <a
+            *ngFor="let n of destacadas()"
+            [routerLink]="['/noticias', n.slug]"
+            class="destacada-card"
+          >
+            <div class="dest-img" [style.background-image]="n.imagen_url ? 'url(' + n.imagen_url + ')' : 'none'">
+              <div class="dest-img-placeholder" *ngIf="!n.imagen_url">📰</div>
+            </div>
+            <div class="dest-body">
+              <span class="cat-badge" [class]="'cat-' + n.categoria">{{ etiquetaCategoria(n.categoria) }}</span>
+              <h3 class="dest-titulo">{{ n.titulo }}</h3>
+              <p class="dest-resumen">{{ n.resumen }}</p>
+              <span class="dest-fecha">{{ n.fecha_publicacion | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filtros-bar">
+        <input
+          type="text"
+          [(ngModel)]="busqueda"
+          placeholder="Buscar noticias..."
+          class="input-busqueda"
+        />
+        <div class="filtro-chips">
+          <button
+            *ngFor="let c of categorias"
+            class="chip"
+            [class.activo]="filtroCategoria === c.value"
+            (click)="filtroCategoria = c.value"
+          >{{ c.label }}</button>
+        </div>
+      </div>
+
+      <p class="resultado-count">{{ noticiasFiltradas().length }} resultado(s)</p>
+
+      <div class="sin-resultados" *ngIf="noticiasFiltradas().length === 0">
+        No se encontraron noticias con los filtros aplicados.
+      </div>
+
+      <!-- Lista -->
+      <div class="noticias-lista">
+        <a
+          *ngFor="let noticia of noticiasFiltradas()"
+          [routerLink]="['/noticias', noticia.slug]"
+          class="noticia-card"
+        >
+          <div class="card-img-wrap">
+            <img *ngIf="noticia.imagen_url" [src]="noticia.imagen_url" [alt]="noticia.titulo" class="card-img" />
+            <div *ngIf="!noticia.imagen_url" class="card-img-placeholder">📰</div>
+          </div>
+          <div class="card-body">
+            <div class="card-badges">
+              <span class="cat-badge" [class]="'cat-' + noticia.categoria">{{ etiquetaCategoria(noticia.categoria) }}</span>
+              <span class="dest-tag" *ngIf="noticia.destacado">⭐</span>
+            </div>
+            <h3 class="card-titulo">{{ noticia.titulo }}</h3>
+            <p class="card-resumen">{{ noticia.resumen }}</p>
+            <span class="card-fecha">{{ noticia.fecha_publicacion | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="card-arrow">→</div>
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+</section>

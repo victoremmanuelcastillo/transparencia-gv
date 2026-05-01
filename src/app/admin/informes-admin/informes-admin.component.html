@@ -1,0 +1,211 @@
+<div class="ia-wrapper">
+
+  <!-- Header -->
+  <div class="ia-header">
+    <div>
+      <h1 class="ia-title">Informes y Reportes</h1>
+      <p class="ia-subtitle">Gestión de informes trimestrales, anuales, auditorías y reportes especiales</p>
+    </div>
+    <button class="btn-primary" (click)="mostrarFormulario = !mostrarFormulario">
+      {{ mostrarFormulario ? 'Cancelar' : '+ Nuevo informe' }}
+    </button>
+  </div>
+
+  <!-- Formulario nuevo informe -->
+  <div class="ia-form-panel" *ngIf="mostrarFormulario">
+    <h2 class="form-titulo">Publicar nuevo informe</h2>
+
+    <div class="form-grid">
+      <div class="form-field form-field-full">
+        <label>Título *</label>
+        <input
+          type="text"
+          [(ngModel)]="nuevoInforme.titulo"
+          placeholder="Ej: Informe de Actividades 1er Trimestre 2026"
+          class="input-field"
+        />
+      </div>
+
+      <div class="form-field">
+        <label>Tipo *</label>
+        <select [(ngModel)]="nuevoInforme.tipo" class="input-field">
+          <option *ngFor="let t of tiposInforme" [value]="t.value">{{ t.label }}</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Año *</label>
+        <input
+          type="number"
+          [(ngModel)]="nuevoInforme.anio"
+          [min]="2020"
+          [max]="anioActual() + 1"
+          class="input-field"
+        />
+      </div>
+
+      <div class="form-field">
+        <label>Trimestre</label>
+        <select [(ngModel)]="nuevoInforme.trimestre" class="input-field">
+          <option [ngValue]="null">N/A</option>
+          <option [ngValue]="1">1er Trimestre</option>
+          <option [ngValue]="2">2do Trimestre</option>
+          <option [ngValue]="3">3er Trimestre</option>
+          <option [ngValue]="4">4to Trimestre</option>
+        </select>
+      </div>
+
+      <div class="form-field form-field-full">
+        <label>Descripción</label>
+        <textarea
+          [(ngModel)]="nuevoInforme.descripcion"
+          placeholder="Breve descripción del informe (opcional)"
+          class="input-field input-textarea"
+          rows="2"
+        ></textarea>
+      </div>
+
+      <div class="form-field form-field-full">
+        <label>Archivo (PDF, Excel, Word) *</label>
+        <input
+          type="file"
+          accept=".pdf,.xlsx,.xls,.docx,.doc"
+          (change)="seleccionarArchivo($event)"
+          class="input-file"
+          id="archivo-informe"
+        />
+      </div>
+    </div>
+
+    <div class="upload-error" *ngIf="uploadError">{{ uploadError }}</div>
+
+    <div class="form-actions">
+      <button class="btn-secondary" (click)="cancelarFormulario()">Cancelar</button>
+      <button
+        class="btn-primary"
+        (click)="guardarInforme()"
+        [disabled]="guardando() || !nuevoInforme.titulo || !nuevoInforme.archivo"
+      >
+        {{ guardando() ? 'Publicando...' : 'Publicar informe' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="ia-stats" *ngIf="!cargando()">
+    <div class="stat-card stat-total">
+      <span class="stat-num">{{ conteo().total }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-card stat-trimestral">
+      <span class="stat-num">{{ conteo().trimestral }}</span>
+      <span class="stat-label">Trimestrales</span>
+    </div>
+    <div class="stat-card stat-anual">
+      <span class="stat-num">{{ conteo().anual }}</span>
+      <span class="stat-label">Anuales</span>
+    </div>
+    <div class="stat-card stat-auditoria">
+      <span class="stat-num">{{ conteo().auditoria }}</span>
+      <span class="stat-label">Auditorías</span>
+    </div>
+    <div class="stat-card stat-financiero">
+      <span class="stat-num">{{ conteo().financiero }}</span>
+      <span class="stat-label">Financieros</span>
+    </div>
+    <div class="stat-card stat-especial">
+      <span class="stat-num">{{ conteo().especial }}</span>
+      <span class="stat-label">Especiales</span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="ia-filtros" *ngIf="!cargando()">
+    <div class="filtro-busqueda">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar por título o descripción..."
+        class="input-busqueda"
+      />
+    </div>
+    <div class="filtro-tipo">
+      <button
+        *ngFor="let f of filtrosTipo"
+        class="btn-filtro"
+        [class.activo]="filtroTipo === f.value"
+        (click)="filtroTipo = f.value"
+      >{{ f.label }}</button>
+    </div>
+    <div class="filtro-anio">
+      <select [(ngModel)]="filtroAnio" class="input-field select-anio">
+        <option value="todos">Todos los años</option>
+        <option *ngFor="let a of aniosDisponibles()" [value]="a">{{ a }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="ia-loading" *ngIf="cargando()">
+    <div class="spinner"></div>
+    <p>Cargando informes...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="ia-error" *ngIf="error()">
+    <p>{{ error() }}</p>
+    <button class="btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Lista -->
+  <div *ngIf="!cargando() && !error()">
+    <div class="ia-count">
+      Mostrando {{ informesFiltrados().length }} de {{ informes().length }} informes
+    </div>
+
+    <div class="ia-empty" *ngIf="informesFiltrados().length === 0">
+      <p>No se encontraron informes con los filtros aplicados.</p>
+    </div>
+
+    <div class="informes-lista">
+      <div
+        *ngFor="let informe of informesFiltrados()"
+        class="informe-card"
+      >
+        <div class="informe-icono">
+          <span class="tipo-badge" [class]="'tipo-' + informe.tipo">
+            {{ etiquetaTipo(informe.tipo) }}
+          </span>
+        </div>
+
+        <div class="informe-info">
+          <h3 class="informe-titulo">{{ informe.titulo }}</h3>
+          <p class="informe-desc" *ngIf="informe.descripcion">{{ informe.descripcion }}</p>
+          <div class="informe-meta">
+            <span>📅 {{ informe.fecha_publicacion | date:'dd/MM/yyyy' }}</span>
+            <span>📆 Año {{ informe.anio }}</span>
+            <span *ngIf="informe.trimestre">T{{ informe.trimestre }}</span>
+          </div>
+        </div>
+
+        <div class="informe-acciones">
+          <a
+            [href]="informe.archivo_url"
+            target="_blank"
+            class="btn-ver"
+            title="Ver documento"
+          >Ver</a>
+          <button
+            class="btn-eliminar"
+            (click)="eliminarInforme(informe)"
+            [disabled]="eliminando() === informe.id"
+            title="Eliminar informe"
+          >
+            {{ eliminando() === informe.id ? '...' : '🗑' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

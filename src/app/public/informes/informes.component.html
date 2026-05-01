@@ -1,0 +1,81 @@
+<section class="page-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h1 class="section-title">Informes y Reportes</h1>
+      <p class="section-subtitle">Consulta los informes trimestrales, anuales, de auditoría y reportes especiales del Ayuntamiento</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-bar" *ngIf="!cargando()">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar informe..."
+        class="input-busqueda"
+      />
+      <div class="filtro-chips">
+        <button
+          *ngFor="let t of tiposInforme"
+          class="chip"
+          [class.activo]="filtroTipo === t.value"
+          (click)="filtroTipo = t.value"
+        >{{ t.label }}</button>
+      </div>
+      <select [(ngModel)]="filtroAnio" class="select-anio">
+        <option value="todos">Todos los años</option>
+        <option *ngFor="let a of aniosDisponibles()" [value]="a">{{ a }}</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-box" *ngIf="cargando()">
+      <div class="spinner"></div>
+      <p>Cargando informes...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" *ngIf="error()">
+      <p>{{ error() }}</p>
+      <button class="btn-reintentar" (click)="cargarDatos()">Reintentar</button>
+    </div>
+
+    <!-- Resultados -->
+    <div *ngIf="!cargando() && !error()">
+      <p class="resultado-count">{{ informesFiltrados().length }} informe(s) encontrado(s)</p>
+
+      <div class="sin-resultados" *ngIf="informesFiltrados().length === 0">
+        No se encontraron informes con los filtros aplicados.
+      </div>
+
+      <div class="informes-grid">
+        <a
+          *ngFor="let informe of informesFiltrados()"
+          [href]="informe.archivo_url"
+          target="_blank"
+          rel="noopener"
+          class="informe-card"
+        >
+          <div class="card-tipo">
+            <span class="tipo-badge" [class]="'tipo-' + informe.tipo">
+              {{ etiquetaTipo(informe.tipo) }}
+            </span>
+          </div>
+          <div class="card-body">
+            <h3 class="card-titulo">{{ informe.titulo }}</h3>
+            <p class="card-desc" *ngIf="informe.descripcion">{{ informe.descripcion }}</p>
+            <div class="card-meta">
+              <span>Año {{ informe.anio }}</span>
+              <span *ngIf="informe.trimestre"> · Trimestre {{ informe.trimestre }}</span>
+              <span> · {{ informe.fecha_publicacion | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+          <div class="card-accion">
+            <span class="btn-descargar">Descargar ↓</span>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>

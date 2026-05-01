@@ -1,0 +1,266 @@
+<div class="na-wrapper">
+
+  <!-- Header -->
+  <div class="na-header">
+    <div>
+      <h1 class="na-title">Noticias y Avisos</h1>
+      <p class="na-subtitle">Gestión de noticias, avisos y comunicados publicados en el portal</p>
+    </div>
+    <button class="btn-primary" (click)="abrirFormularioCrear()" *ngIf="!mostrarFormulario">
+      + Nueva noticia
+    </button>
+  </div>
+
+  <!-- Formulario crear / editar -->
+  <div class="na-form-panel" *ngIf="mostrarFormulario">
+    <h2 class="form-titulo">
+      {{ modoFormulario === 'crear' ? 'Nueva noticia' : 'Editar noticia' }}
+    </h2>
+
+    <div class="form-grid">
+      <!-- Título -->
+      <div class="form-field form-field-full">
+        <label>Título *</label>
+        <input
+          type="text"
+          [(ngModel)]="formulario.titulo"
+          placeholder="Título de la noticia o aviso"
+          class="input-field"
+        />
+      </div>
+
+      <!-- Categoría -->
+      <div class="form-field">
+        <label>Categoría *</label>
+        <select [(ngModel)]="formulario.categoria" class="input-field">
+          <option *ngFor="let c of categorias" [value]="c.value">{{ c.label }}</option>
+        </select>
+      </div>
+
+      <!-- Switches publicado / destacado -->
+      <div class="form-field">
+        <label>Estado de publicación</label>
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" [(ngModel)]="formulario.publicado" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">{{ formulario.publicado ? 'Publicado' : 'Borrador' }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>Destacar en portada</label>
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" [(ngModel)]="formulario.destacado" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">{{ formulario.destacado ? 'Destacado' : 'Normal' }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="form-field form-field-full">
+        <label>Resumen * <span class="label-hint">(se muestra en la lista de noticias)</span></label>
+        <textarea
+          [(ngModel)]="formulario.resumen"
+          placeholder="Breve resumen de la noticia (máximo 200 caracteres recomendado)"
+          class="input-field input-textarea"
+          rows="2"
+        ></textarea>
+      </div>
+
+      <!-- Contenido -->
+      <div class="form-field form-field-full">
+        <label>Contenido <span class="label-hint">(texto completo de la noticia)</span></label>
+        <textarea
+          [(ngModel)]="formulario.contenido"
+          placeholder="Contenido completo de la noticia..."
+          class="input-field input-textarea"
+          rows="6"
+        ></textarea>
+      </div>
+
+      <!-- Imagen -->
+      <div class="form-field form-field-full">
+        <label>Imagen principal</label>
+        <div class="imagen-preview" *ngIf="formulario.imagenUrlActual && !formulario.imagen">
+          <img [src]="formulario.imagenUrlActual" alt="Imagen actual" class="img-preview" />
+          <span class="img-hint">Imagen actual — sube otra para reemplazarla</span>
+        </div>
+        <input
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp"
+          (change)="seleccionarImagen($event)"
+          class="input-file"
+          id="imagen-noticia"
+        />
+      </div>
+    </div>
+
+    <div class="upload-error" *ngIf="uploadError">{{ uploadError }}</div>
+
+    <div class="form-actions">
+      <button class="btn-secondary" (click)="cancelarFormulario()">Cancelar</button>
+      <button
+        class="btn-primary"
+        (click)="guardarNoticia()"
+        [disabled]="guardando() || !formulario.titulo.trim() || !formulario.resumen.trim()"
+      >
+        {{ guardando() ? 'Guardando...' : (modoFormulario === 'crear' ? 'Publicar noticia' : 'Guardar cambios') }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="na-stats" *ngIf="!cargando()">
+    <div class="stat-card stat-total">
+      <span class="stat-num">{{ conteo().total }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-card stat-publicado">
+      <span class="stat-num">{{ conteo().publicados }}</span>
+      <span class="stat-label">Publicados</span>
+    </div>
+    <div class="stat-card stat-borrador">
+      <span class="stat-num">{{ conteo().borradores }}</span>
+      <span class="stat-label">Borradores</span>
+    </div>
+    <div class="stat-card stat-destacado">
+      <span class="stat-num">{{ conteo().destacados }}</span>
+      <span class="stat-label">Destacados</span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="na-filtros" *ngIf="!cargando()">
+    <div class="filtro-busqueda">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar por título o resumen..."
+        class="input-busqueda"
+      />
+    </div>
+    <div class="filtro-grupo">
+      <button
+        *ngFor="let f of filtrosCategorias"
+        class="btn-filtro"
+        [class.activo]="filtroCategoria === f.value"
+        (click)="filtroCategoria = f.value"
+      >{{ f.label }}</button>
+    </div>
+    <div class="filtro-grupo">
+      <button
+        *ngFor="let f of filtrosEstado"
+        class="btn-filtro btn-filtro-estado"
+        [class.activo]="filtroEstado === f.value"
+        (click)="filtroEstado = f.value"
+      >{{ f.label }}</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="na-loading" *ngIf="cargando()">
+    <div class="spinner"></div>
+    <p>Cargando noticias...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="na-error" *ngIf="error()">
+    <p>{{ error() }}</p>
+    <button class="btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Lista -->
+  <div *ngIf="!cargando() && !error()">
+    <div class="na-count">
+      Mostrando {{ noticiasFiltradas().length }} de {{ noticias().length }} registros
+    </div>
+
+    <div class="na-empty" *ngIf="noticiasFiltradas().length === 0">
+      <p>No se encontraron noticias con los filtros aplicados.</p>
+    </div>
+
+    <div class="noticias-lista">
+      <div
+        *ngFor="let noticia of noticiasFiltradas()"
+        class="noticia-card"
+        [class.card-publicada]="noticia.publicado"
+        [class.card-borrador]="!noticia.publicado"
+      >
+        <!-- Imagen -->
+        <div class="noticia-img-wrap" *ngIf="noticia.imagen_url">
+          <img [src]="noticia.imagen_url" [alt]="noticia.titulo" class="noticia-img" />
+        </div>
+        <div class="noticia-img-placeholder" *ngIf="!noticia.imagen_url">
+          <span>Sin imagen</span>
+        </div>
+
+        <!-- Contenido -->
+        <div class="noticia-body">
+          <div class="noticia-badges">
+            <span class="cat-badge" [class]="'cat-' + noticia.categoria">
+              {{ etiquetaCategoria(noticia.categoria) }}
+            </span>
+            <span class="dest-badge" *ngIf="noticia.destacado">⭐ Destacado</span>
+          </div>
+
+          <h3 class="noticia-titulo">{{ noticia.titulo }}</h3>
+          <p class="noticia-resumen">{{ noticia.resumen }}</p>
+
+          <div class="noticia-meta">
+            <span>📅 {{ noticia.fecha_publicacion | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="noticia-acciones">
+          <!-- Toggle publicado -->
+          <button
+            class="btn-toggle"
+            [class.activo]="noticia.publicado"
+            (click)="togglePublicado(noticia)"
+            [disabled]="cambiandoEstado() === noticia.id"
+            [title]="noticia.publicado ? 'Despublicar' : 'Publicar'"
+          >
+            <span *ngIf="cambiandoEstado() !== noticia.id">
+              {{ noticia.publicado ? '👁 Publicado' : '🔒 Borrador' }}
+            </span>
+            <span *ngIf="cambiandoEstado() === noticia.id">...</span>
+          </button>
+
+          <!-- Toggle destacado -->
+          <button
+            class="btn-toggle btn-toggle-dest"
+            [class.activo]="noticia.destacado"
+            (click)="toggleDestacado(noticia)"
+            [disabled]="cambiandoEstado() === noticia.id + '-dest'"
+            title="Marcar/desmarcar como destacado"
+          >
+            {{ noticia.destacado ? '⭐' : '☆' }}
+          </button>
+
+          <!-- Editar -->
+          <button
+            class="btn-editar"
+            (click)="abrirFormularioEditar(noticia)"
+            title="Editar noticia"
+          >✏️ Editar</button>
+
+          <!-- Eliminar -->
+          <button
+            class="btn-eliminar"
+            (click)="eliminarNoticia(noticia)"
+            [disabled]="eliminando() === noticia.id"
+            title="Eliminar noticia"
+          >
+            {{ eliminando() === noticia.id ? '...' : '🗑' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
