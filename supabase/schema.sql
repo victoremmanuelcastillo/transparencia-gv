@@ -223,7 +223,8 @@ CREATE TABLE tramites (
   area TEXT,
   horario TEXT,
   ubicacion TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE tramites ENABLE ROW LEVEL SECURITY;

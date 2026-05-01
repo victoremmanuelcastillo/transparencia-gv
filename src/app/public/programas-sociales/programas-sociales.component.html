@@ -1,0 +1,97 @@
+<section class="page-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h1 class="section-title">Programas Sociales</h1>
+      <p class="section-subtitle">Conoce los programas y apoyos sociales que ofrece el H. Ayuntamiento de Guadalupe Victoria</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-bar" *ngIf="!cargando()">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar programa..."
+        class="input-busqueda"
+      />
+      <div class="filtro-chips">
+        <button
+          *ngFor="let f of filtros"
+          class="chip"
+          [class.activo]="filtroEstatus === f.value"
+          (click)="filtroEstatus = f.value"
+        >{{ f.label }}</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-box" *ngIf="cargando()">
+      <div class="spinner"></div>
+      <p>Cargando programas...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" *ngIf="error()">
+      <p>{{ error() }}</p>
+      <button class="btn-reintentar" (click)="cargarDatos()">Reintentar</button>
+    </div>
+
+    <!-- Lista -->
+    <div *ngIf="!cargando() && !error()">
+      <p class="resultado-count">{{ programasFiltrados().length }} programa(s) disponible(s)</p>
+
+      <div class="sin-resultados" *ngIf="programasFiltrados().length === 0">
+        No se encontraron programas con los filtros seleccionados.
+      </div>
+
+      <div class="programas-lista">
+        <div
+          *ngFor="let p of programasFiltrados()"
+          class="programa-card"
+          [class.expandida]="expandido === p.id"
+        >
+          <!-- Cabecera clickeable -->
+          <div class="programa-header" (click)="toggleExpand(p.id)">
+            <div class="programa-info">
+              <div class="programa-nombre">
+                {{ p.nombre }}
+                <span class="badge-estatus" [class]="'badge-' + p.estatus">{{ estatusLabels[p.estatus] }}</span>
+              </div>
+              <div class="programa-meta">
+                <span *ngIf="p.beneficiarios">Beneficiarios: {{ p.beneficiarios }}</span>
+                <span *ngIf="p.periodo"> · {{ p.periodo }}</span>
+              </div>
+            </div>
+            <span class="chevron" [class.open]="expandido === p.id">▼</span>
+          </div>
+
+          <!-- Detalle expandido -->
+          <div class="programa-detalle" *ngIf="expandido === p.id">
+            <p class="detalle-desc" *ngIf="p.descripcion">{{ p.descripcion }}</p>
+
+            <div class="detalle-grid">
+              <div class="detalle-item" *ngIf="p.presupuesto">
+                <span class="item-label">Presupuesto</span>
+                <span class="item-valor">${{ p.presupuesto | number:'1.0-0' }} MXN</span>
+              </div>
+              <div class="detalle-item" *ngIf="p.fecha_inicio">
+                <span class="item-label">Fecha inicio</span>
+                <span class="item-valor">{{ p.fecha_inicio | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <div class="detalle-item" *ngIf="p.fecha_fin">
+                <span class="item-label">Fecha fin</span>
+                <span class="item-valor">{{ p.fecha_fin | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+
+            <div class="detalle-requisitos" *ngIf="p.requisitos">
+              <h4 class="req-titulo">Requisitos</h4>
+              <p class="req-texto">{{ p.requisitos }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

@@ -1,0 +1,131 @@
+<div class="admin-wrapper">
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h1 class="admin-title">Trámites y Servicios</h1>
+      <p class="admin-subtitle">Catálogo de trámites y servicios municipales</p>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">+ Nuevo trámite</button>
+  </div>
+
+  <!-- Stat -->
+  <div class="admin-stats" *ngIf="!cargando()">
+    <div class="stat-card stat-total">
+      <span class="stat-num">{{ tramites().length }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-card stat-filtrado">
+      <span class="stat-num">{{ tramitesFiltrados().length }}</span>
+      <span class="stat-label">Mostrando</span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="admin-filtros">
+    <div class="filtro-busqueda">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar por nombre, área..."
+        class="input-busqueda"
+      />
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="admin-loading" *ngIf="cargando()">
+    <div class="spinner"></div>
+    <p>Cargando trámites...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="admin-error" *ngIf="error()">
+    <p>{{ error() }}</p>
+    <button class="btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Lista -->
+  <div class="admin-lista" *ngIf="!cargando() && !error()">
+    <div class="lista-count">{{ tramitesFiltrados().length }} trámite(s)</div>
+
+    <div class="item-card" *ngFor="let t of tramitesFiltrados()">
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-nombre">{{ t.nombre }}</div>
+          <div class="item-meta">
+            <span *ngIf="t.area">{{ t.area }}</span>
+            <span *ngIf="t.costo"> · {{ t.costo }}</span>
+            <span *ngIf="t.tiempo_respuesta"> · {{ t.tiempo_respuesta }}</span>
+          </div>
+          <p class="item-desc" *ngIf="t.descripcion">{{ t.descripcion }}</p>
+        </div>
+        <div class="item-acciones">
+          <button class="btn-editar" (click)="abrirEditar(t)">Editar</button>
+          <button class="btn-eliminar" (click)="eliminar(t)" [disabled]="eliminando === t.id">
+            {{ eliminando === t.id ? '...' : 'Eliminar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lista-empty" *ngIf="tramitesFiltrados().length === 0">
+      No se encontraron trámites. Crea el primero con "+ Nuevo trámite".
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="modoModal" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ modoModal === 'crear' ? 'Nuevo trámite' : 'Editar trámite' }}</h2>
+        <button class="btn-close" (click)="cerrarModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field form-col-2">
+            <label>Nombre *</label>
+            <input type="text" [(ngModel)]="form.nombre" class="input-field" placeholder="Nombre del trámite" />
+          </div>
+          <div class="form-field form-col-2">
+            <label>Descripción</label>
+            <textarea [(ngModel)]="form.descripcion" class="input-field" rows="3" placeholder="Descripción del trámite"></textarea>
+          </div>
+          <div class="form-field">
+            <label>Área responsable</label>
+            <input type="text" [(ngModel)]="form.area" class="input-field" placeholder="Ej: Tesorería Municipal" />
+          </div>
+          <div class="form-field">
+            <label>Costo</label>
+            <input type="text" [(ngModel)]="form.costo" class="input-field" placeholder="Ej: Gratuito / $150 MXN" />
+          </div>
+          <div class="form-field">
+            <label>Tiempo de respuesta</label>
+            <input type="text" [(ngModel)]="form.tiempo_respuesta" class="input-field" placeholder="Ej: 5 días hábiles" />
+          </div>
+          <div class="form-field">
+            <label>Horario de atención</label>
+            <input type="text" [(ngModel)]="form.horario" class="input-field" placeholder="Ej: Lun-Vie 8:00-15:00" />
+          </div>
+          <div class="form-field form-col-2">
+            <label>Requisitos</label>
+            <textarea [(ngModel)]="form.requisitos" class="input-field" rows="3" placeholder="Lista de requisitos para realizar el trámite"></textarea>
+          </div>
+          <div class="form-field form-col-2">
+            <label>Ubicación</label>
+            <input type="text" [(ngModel)]="form.ubicacion" class="input-field" placeholder="Ej: Presidencia Municipal, planta baja" />
+          </div>
+          <div class="form-field form-col-2">
+            <label>URL del formato (opcional)</label>
+            <input type="url" [(ngModel)]="form.formato_url" class="input-field" placeholder="https://..." />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn-primary" (click)="guardar()" [disabled]="guardando() || !form.nombre?.trim()">
+          {{ guardando() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

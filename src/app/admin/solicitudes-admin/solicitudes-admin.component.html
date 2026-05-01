@@ -1,0 +1,205 @@
+<div class="admin-wrapper">
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h1 class="admin-title">Solicitudes ARCO</h1>
+      <p class="admin-subtitle">Acceso, Rectificación, Cancelación y Oposición de datos personales</p>
+    </div>
+    <button class="btn-secondary" (click)="cargarDatos()">Actualizar</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="admin-stats" *ngIf="!cargando()">
+    <div class="stat-card stat-total">
+      <span class="stat-num">{{ conteo().total }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-card stat-recibida">
+      <span class="stat-num">{{ conteo().recibida }}</span>
+      <span class="stat-label">Recibidas</span>
+    </div>
+    <div class="stat-card stat-proceso">
+      <span class="stat-num">{{ conteo().en_proceso }}</span>
+      <span class="stat-label">En proceso</span>
+    </div>
+    <div class="stat-card stat-respondida">
+      <span class="stat-num">{{ conteo().respondida }}</span>
+      <span class="stat-label">Respondidas</span>
+    </div>
+    <div class="stat-card stat-cerrada">
+      <span class="stat-num">{{ conteo().cerrada }}</span>
+      <span class="stat-label">Cerradas</span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="admin-filtros">
+    <div class="filtro-busqueda">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar por folio, nombre, correo..."
+        class="input-busqueda"
+      />
+    </div>
+    <div class="filtro-chips">
+      <button
+        *ngFor="let f of filtrosEstatus"
+        class="btn-filtro"
+        [class.activo]="filtroEstatus === f.value"
+        (click)="filtroEstatus = f.value"
+      >{{ f.label }}</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="admin-loading" *ngIf="cargando()">
+    <div class="spinner"></div>
+    <p>Cargando solicitudes...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="admin-error" *ngIf="error()">
+    <p>{{ error() }}</p>
+    <button class="btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Layout dos paneles -->
+  <div class="sol-layout" *ngIf="!cargando() && !error()">
+
+    <!-- Lista -->
+    <div class="sol-lista">
+      <div class="lista-count">{{ solicitudesFiltradas().length }} solicitud(es)</div>
+
+      <div
+        *ngFor="let s of solicitudesFiltradas()"
+        class="sol-item"
+        [class.activa]="solicitudSeleccionada?.id === s.id"
+        (click)="abrirDetalle(s)"
+      >
+        <div class="sol-tipo" [class]="'tipo-' + s.tipo">{{ tipoLabels[s.tipo] }}</div>
+        <div class="sol-info">
+          <div class="sol-nombre">{{ s.solicitante?.nombre || 'Sin nombre' }}</div>
+          <div class="sol-folio">Folio: {{ s.folio }}</div>
+          <div class="sol-fecha">{{ s.fecha_creacion | date:'dd/MM/yyyy' }}</div>
+        </div>
+        <div class="sol-right">
+          <span class="sol-badge" [class]="'badge-' + s.estatus">{{ estatusLabels[s.estatus] }}</span>
+          <span class="sol-dias" *ngIf="s.estatus !== 'respondida' && s.estatus !== 'cerrada'"
+            [class.vencido]="diasRestantes(s.fecha_limite) <= 0"
+            [class.urgente]="diasRestantes(s.fecha_limite) > 0 && diasRestantes(s.fecha_limite) <= 5"
+          >
+            <ng-container *ngIf="diasRestantes(s.fecha_limite) > 0">
+              {{ diasRestantes(s.fecha_limite) }}d restantes
+            </ng-container>
+            <ng-container *ngIf="diasRestantes(s.fecha_limite) <= 0">
+              Vencida
+            </ng-container>
+          </span>
+        </div>
+      </div>
+
+      <div class="lista-empty" *ngIf="solicitudesFiltradas().length === 0">
+        No hay solicitudes con los filtros aplicados.
+      </div>
+    </div>
+
+    <!-- Panel de detalle -->
+    <div class="sol-detalle" *ngIf="solicitudSeleccionada">
+      <div class="detalle-header">
+        <div>
+          <h2 class="detalle-titulo">Solicitud de {{ tipoLabels[solicitudSeleccionada.tipo] }}</h2>
+          <p class="detalle-fecha">Folio: {{ solicitudSeleccionada.folio }} · Recibida el {{ solicitudSeleccionada.fecha_creacion | date:'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+        <button class="btn-close" (click)="cerrarDetalle()">✕</button>
+      </div>
+
+      <div class="detalle-body">
+        <!-- Alerta de vencimiento -->
+        <div class="detalle-alerta vencida" *ngIf="diasRestantes(solicitudSeleccionada.fecha_limite) <= 0 && solicitudSeleccionada.estatus !== 'respondida' && solicitudSeleccionada.estatus !== 'cerrada'">
+          Esta solicitud venció el {{ solicitudSeleccionada.fecha_limite | date:'dd/MM/yyyy' }}. Responde a la brevedad.
+        </div>
+        <div class="detalle-alerta urgente" *ngIf="diasRestantes(solicitudSeleccionada.fecha_limite) > 0 && diasRestantes(solicitudSeleccionada.fecha_limite) <= 5 && solicitudSeleccionada.estatus !== 'respondida' && solicitudSeleccionada.estatus !== 'cerrada'">
+          Vence en {{ diasRestantes(solicitudSeleccionada.fecha_limite) }} días ({{ solicitudSeleccionada.fecha_limite | date:'dd/MM/yyyy' }}).
+        </div>
+
+        <!-- Datos del solicitante -->
+        <div class="detalle-seccion">
+          <h3 class="seccion-titulo">Datos del solicitante</h3>
+          <div class="detalle-grid">
+            <div class="detalle-campo">
+              <span class="campo-label">Nombre</span>
+              <span class="campo-valor">{{ solicitudSeleccionada.solicitante?.nombre }}</span>
+            </div>
+            <div class="detalle-campo">
+              <span class="campo-label">Correo</span>
+              <span class="campo-valor">{{ solicitudSeleccionada.solicitante?.email }}</span>
+            </div>
+            <div class="detalle-campo" *ngIf="solicitudSeleccionada.solicitante?.telefono">
+              <span class="campo-label">Teléfono</span>
+              <span class="campo-valor">{{ solicitudSeleccionada.solicitante.telefono }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="detalle-seccion">
+          <h3 class="seccion-titulo">Descripción de la solicitud</h3>
+          <p class="detalle-texto">{{ solicitudSeleccionada.descripcion }}</p>
+        </div>
+
+        <!-- Estatus -->
+        <div class="detalle-seccion">
+          <h3 class="seccion-titulo">Estatus</h3>
+          <div class="estatus-row">
+            <select
+              class="select-estatus"
+              [class]="'estatus-' + solicitudSeleccionada.estatus"
+              [ngModel]="solicitudSeleccionada.estatus"
+              (ngModelChange)="cambiarEstatus(solicitudSeleccionada, $event)"
+            >
+              <option value="recibida">Recibida</option>
+              <option value="en_proceso">En proceso</option>
+              <option value="respondida">Respondida</option>
+              <option value="cerrada">Cerrada</option>
+            </select>
+            <span class="sol-fecha" *ngIf="solicitudSeleccionada.fecha_respuesta">
+              Respondida el {{ solicitudSeleccionada.fecha_respuesta | date:'dd/MM/yyyy' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Respuesta existente -->
+        <div class="detalle-seccion" *ngIf="solicitudSeleccionada.respuesta">
+          <h3 class="seccion-titulo">Respuesta registrada</h3>
+          <p class="detalle-texto respuesta-texto">{{ solicitudSeleccionada.respuesta }}</p>
+        </div>
+
+        <!-- Formulario de respuesta -->
+        <div class="detalle-seccion">
+          <h3 class="seccion-titulo">{{ solicitudSeleccionada.respuesta ? 'Actualizar respuesta' : 'Registrar respuesta' }}</h3>
+          <textarea
+            [(ngModel)]="respuestaTexto"
+            class="input-field"
+            rows="5"
+            placeholder="Redacte aquí la respuesta oficial a la solicitud..."
+          ></textarea>
+          <div class="respuesta-footer">
+            <button
+              class="btn-primary"
+              (click)="guardarRespuesta()"
+              [disabled]="guardando() || !respuestaTexto.trim()"
+            >
+              {{ guardando() ? 'Guardando...' : 'Guardar respuesta' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placeholder -->
+    <div class="sol-placeholder" *ngIf="!solicitudSeleccionada">
+      <p>Selecciona una solicitud para ver su detalle y gestionar la respuesta.</p>
+    </div>
+  </div>
+</div>

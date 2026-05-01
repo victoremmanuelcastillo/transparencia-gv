@@ -1,0 +1,93 @@
+<section class="page-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h1 class="section-title">Trámites y Servicios</h1>
+      <p class="section-subtitle">Consulta los trámites municipales, sus requisitos, costos y tiempos de respuesta</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-bar" *ngIf="!cargando()">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar trámite..."
+        class="input-busqueda"
+      />
+      <select [(ngModel)]="filtroArea" class="select-area">
+        <option value="todos">Todas las áreas</option>
+        <option *ngFor="let area of areasDisponibles()" [value]="area" [hidden]="area === 'todos'">{{ area }}</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-box" *ngIf="cargando()">
+      <div class="spinner"></div>
+      <p>Cargando trámites...</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" *ngIf="error()">
+      <p>{{ error() }}</p>
+      <button class="btn-reintentar" (click)="cargarDatos()">Reintentar</button>
+    </div>
+
+    <!-- Lista -->
+    <div *ngIf="!cargando() && !error()">
+      <p class="resultado-count">{{ tramitesFiltrados().length }} trámite(s) disponible(s)</p>
+
+      <div class="sin-resultados" *ngIf="tramitesFiltrados().length === 0">
+        No se encontraron trámites con los filtros seleccionados.
+      </div>
+
+      <div class="tramites-lista">
+        <div
+          *ngFor="let t of tramitesFiltrados()"
+          class="tramite-card"
+          [class.expandida]="expandido === t.id"
+        >
+          <!-- Cabecera -->
+          <div class="tramite-header" (click)="toggleExpand(t.id)">
+            <div class="tramite-info">
+              <div class="tramite-nombre">{{ t.nombre }}</div>
+              <div class="tramite-meta">
+                <span class="tag-area" *ngIf="t.area">{{ t.area }}</span>
+                <span class="tag-costo" *ngIf="t.costo">{{ t.costo }}</span>
+                <span class="tag-tiempo" *ngIf="t.tiempo_respuesta">{{ t.tiempo_respuesta }}</span>
+              </div>
+            </div>
+            <span class="chevron" [class.open]="expandido === t.id">▼</span>
+          </div>
+
+          <!-- Detalle -->
+          <div class="tramite-detalle" *ngIf="expandido === t.id">
+            <p class="detalle-desc" *ngIf="t.descripcion">{{ t.descripcion }}</p>
+
+            <div class="detalle-grid">
+              <div class="detalle-item" *ngIf="t.horario">
+                <span class="item-label">Horario</span>
+                <span class="item-valor">{{ t.horario }}</span>
+              </div>
+              <div class="detalle-item" *ngIf="t.ubicacion">
+                <span class="item-label">Ubicación</span>
+                <span class="item-valor">{{ t.ubicacion }}</span>
+              </div>
+            </div>
+
+            <div class="detalle-requisitos" *ngIf="t.requisitos">
+              <h4 class="req-titulo">Requisitos</h4>
+              <p class="req-texto">{{ t.requisitos }}</p>
+            </div>
+
+            <div class="detalle-formato" *ngIf="t.formato_url">
+              <a [href]="t.formato_url" target="_blank" rel="noopener" class="btn-formato">
+                Descargar formato ↓
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

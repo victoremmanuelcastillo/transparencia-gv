@@ -1,0 +1,164 @@
+<div class="admin-wrapper">
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h1 class="admin-title">Programas Sociales</h1>
+      <p class="admin-subtitle">Gestión de programas y apoyos sociales del municipio</p>
+    </div>
+    <button class="btn-primary" (click)="abrirCrear()">+ Nuevo programa</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="admin-stats" *ngIf="!cargando()">
+    <div class="stat-card stat-total">
+      <span class="stat-num">{{ conteo().total }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-card stat-activo">
+      <span class="stat-num">{{ conteo().activo }}</span>
+      <span class="stat-label">Activos</span>
+    </div>
+    <div class="stat-card stat-proceso">
+      <span class="stat-num">{{ conteo().en_proceso }}</span>
+      <span class="stat-label">En proceso</span>
+    </div>
+    <div class="stat-card stat-finalizado">
+      <span class="stat-num">{{ conteo().finalizado }}</span>
+      <span class="stat-label">Finalizados</span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="admin-filtros">
+    <div class="filtro-busqueda">
+      <input
+        type="text"
+        [(ngModel)]="busqueda"
+        placeholder="Buscar por nombre, beneficiarios..."
+        class="input-busqueda"
+      />
+    </div>
+    <div class="filtro-chips">
+      <button
+        *ngFor="let f of filtros"
+        class="btn-filtro"
+        [class.activo]="filtroEstatus === f.value"
+        (click)="filtroEstatus = f.value"
+      >{{ f.label }}</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="admin-loading" *ngIf="cargando()">
+    <div class="spinner"></div>
+    <p>Cargando programas...</p>
+  </div>
+
+  <!-- Error -->
+  <div class="admin-error" *ngIf="error()">
+    <p>{{ error() }}</p>
+    <button class="btn-primary" (click)="cargarDatos()">Reintentar</button>
+  </div>
+
+  <!-- Lista -->
+  <div class="admin-lista" *ngIf="!cargando() && !error()">
+    <div class="lista-count">{{ programasFiltrados().length }} programa(s)</div>
+
+    <div class="item-card" *ngFor="let p of programasFiltrados()">
+      <div class="item-row">
+        <div class="item-info">
+          <div class="item-nombre">
+            {{ p.nombre }}
+            <span class="badge-estatus" [class]="'badge-' + p.estatus">{{ estatusLabels[p.estatus] }}</span>
+          </div>
+          <div class="item-meta">
+            <span *ngIf="p.beneficiarios">Beneficiarios: {{ p.beneficiarios }}</span>
+            <span *ngIf="p.periodo"> · Periodo: {{ p.periodo }}</span>
+            <span *ngIf="p.presupuesto"> · ${{ p.presupuesto | number }}</span>
+          </div>
+          <p class="item-desc" *ngIf="p.descripcion">{{ p.descripcion }}</p>
+        </div>
+        <div class="item-acciones">
+          <select
+            class="select-estatus"
+            [class]="'estatus-' + p.estatus"
+            [ngModel]="p.estatus"
+            (ngModelChange)="cambiarEstatus(p, $event)"
+          >
+            <option value="activo">Activo</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="finalizado">Finalizado</option>
+          </select>
+          <button class="btn-editar" (click)="abrirEditar(p)">Editar</button>
+          <button class="btn-eliminar" (click)="eliminar(p)" [disabled]="eliminando === p.id">
+            {{ eliminando === p.id ? '...' : 'Eliminar' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lista-empty" *ngIf="programasFiltrados().length === 0">
+      No se encontraron programas con los filtros aplicados.
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="modoModal" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ modoModal === 'crear' ? 'Nuevo programa' : 'Editar programa' }}</h2>
+        <button class="btn-close" (click)="cerrarModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field form-col-2">
+            <label>Nombre *</label>
+            <input type="text" [(ngModel)]="form.nombre" class="input-field" placeholder="Nombre del programa" />
+          </div>
+          <div class="form-field form-col-2">
+            <label>Descripción</label>
+            <textarea [(ngModel)]="form.descripcion" class="input-field" rows="3" placeholder="Descripción general del programa"></textarea>
+          </div>
+          <div class="form-field">
+            <label>Beneficiarios</label>
+            <input type="text" [(ngModel)]="form.beneficiarios" class="input-field" placeholder="Ej: Adultos mayores de 60 años" />
+          </div>
+          <div class="form-field">
+            <label>Periodo</label>
+            <input type="text" [(ngModel)]="form.periodo" class="input-field" placeholder="Ej: 2026, Enero-Marzo 2026" />
+          </div>
+          <div class="form-field">
+            <label>Fecha inicio</label>
+            <input type="date" [(ngModel)]="form.fecha_inicio" class="input-field" />
+          </div>
+          <div class="form-field">
+            <label>Fecha fin</label>
+            <input type="date" [(ngModel)]="form.fecha_fin" class="input-field" />
+          </div>
+          <div class="form-field">
+            <label>Presupuesto (MXN)</label>
+            <input type="number" [(ngModel)]="form.presupuesto" class="input-field" min="0" step="0.01" />
+          </div>
+          <div class="form-field">
+            <label>Estatus</label>
+            <select [(ngModel)]="form.estatus" class="input-field">
+              <option value="activo">Activo</option>
+              <option value="en_proceso">En proceso</option>
+              <option value="finalizado">Finalizado</option>
+            </select>
+          </div>
+          <div class="form-field form-col-2">
+            <label>Requisitos</label>
+            <textarea [(ngModel)]="form.requisitos" class="input-field" rows="3" placeholder="Lista de requisitos para acceder al programa"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn-primary" (click)="guardar()" [disabled]="guardando() || !form.nombre?.trim()">
+          {{ guardando() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

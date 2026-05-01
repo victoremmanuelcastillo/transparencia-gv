@@ -1,0 +1,211 @@
+<section class="page-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h1 class="section-title">Solicitudes ARCO</h1>
+      <p class="section-subtitle">Ejerce tus derechos de Acceso, Rectificación, Cancelación y Oposición de datos personales</p>
+    </div>
+
+    <!-- ===== VISTA: INFO ===== -->
+    <div *ngIf="vista() === 'info'">
+
+      <!-- Tarjetas de tipos -->
+      <div class="tipos-grid">
+        <div
+          *ngFor="let tipo of tipos"
+          class="tipo-card"
+          (click)="irAFormulario(tipo.value)"
+        >
+          <div class="tipo-icono">{{ tipo.icono }}</div>
+          <div class="tipo-label">{{ tipo.label }}</div>
+          <p class="tipo-desc">{{ tipo.descripcion }}</p>
+          <span class="tipo-cta">Solicitar →</span>
+        </div>
+      </div>
+
+      <!-- Marco legal -->
+      <div class="info-legal">
+        <h3 class="info-titulo">¿Cuál es el plazo de respuesta?</h3>
+        <p class="info-texto">
+          Conforme a la Ley General de Protección de Datos Personales, el Ayuntamiento tiene
+          <strong>20 días hábiles</strong> para responder tu solicitud a partir de su recepción.
+        </p>
+      </div>
+
+      <!-- Botón de consulta -->
+      <div class="consulta-banner">
+        <div>
+          <strong>¿Ya tienes un folio?</strong>
+          <p>Consulta el estado de tu solicitud en cualquier momento.</p>
+        </div>
+        <button class="btn-outline" (click)="vista.set('consulta')">Consultar mi solicitud</button>
+      </div>
+
+    </div>
+
+    <!-- ===== VISTA: FORMULARIO ===== -->
+    <div *ngIf="vista() === 'formulario'" class="formulario-wrapper">
+
+      <div class="form-nav">
+        <button class="btn-back" (click)="volverAInfo()">← Volver</button>
+        <h2 class="form-titulo">Solicitud de {{ labelTipo(form.tipo) }}</h2>
+      </div>
+
+      <div class="form-card">
+        <!-- Selector de tipo -->
+        <div class="form-section">
+          <label class="form-label">Tipo de solicitud *</label>
+          <div class="tipo-selector">
+            <button
+              *ngFor="let tipo of tipos"
+              class="tipo-btn"
+              [class.activo]="form.tipo === tipo.value"
+              (click)="form.tipo = tipo.value"
+            >{{ tipo.icono }} {{ tipo.label }}</button>
+          </div>
+        </div>
+
+        <!-- Datos personales -->
+        <div class="form-section">
+          <h3 class="section-label">Datos del solicitante</h3>
+          <div class="form-grid">
+            <div class="form-field form-col-2">
+              <label class="form-label">Nombre completo *</label>
+              <input type="text" [(ngModel)]="form.nombre" class="input-field" placeholder="Tu nombre completo" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Correo electrónico *</label>
+              <input type="email" [(ngModel)]="form.email" class="input-field" placeholder="correo@ejemplo.com" />
+            </div>
+            <div class="form-field">
+              <label class="form-label">Teléfono (opcional)</label>
+              <input type="tel" [(ngModel)]="form.telefono" class="input-field" placeholder="618 000 0000" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-section">
+          <label class="form-label">Descripción de la solicitud *</label>
+          <textarea
+            [(ngModel)]="form.descripcion"
+            class="input-field"
+            rows="5"
+            placeholder="Describe de forma clara y específica tu solicitud. Incluye qué datos involucra y el motivo."
+          ></textarea>
+          <p class="form-hint">Sé específico para que podamos atenderte de forma más eficiente.</p>
+        </div>
+
+        <!-- Aviso de privacidad -->
+        <p class="aviso-privacidad">
+          Al enviar esta solicitud, aceptas que tus datos serán tratados únicamente para gestionar
+          tu solicitud ARCO conforme a nuestro
+          <a routerLink="/aviso-privacidad" class="link-aviso">Aviso de Privacidad</a>.
+        </p>
+
+        <!-- Error -->
+        <div class="form-error" *ngIf="error()">{{ error() }}</div>
+
+        <!-- Acciones -->
+        <div class="form-acciones">
+          <button class="btn-secondary" (click)="volverAInfo()">Cancelar</button>
+          <button
+            class="btn-primary"
+            (click)="enviarSolicitud()"
+            [disabled]="enviando() || !form.nombre.trim() || !form.email.trim() || !form.descripcion.trim()"
+          >
+            {{ enviando() ? 'Enviando...' : 'Enviar solicitud' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== VISTA: CONFIRMACIÓN ===== -->
+    <div *ngIf="vista() === 'confirmacion'" class="confirmacion-wrapper">
+      <div class="confirmacion-card">
+        <div class="confirm-icono">✅</div>
+        <h2 class="confirm-titulo">Solicitud recibida</h2>
+        <p class="confirm-texto">
+          Tu solicitud de <strong>{{ labelTipo(form.tipo) }}</strong> ha sido registrada exitosamente.
+          Recibirás respuesta en un plazo máximo de <strong>20 días hábiles</strong>.
+        </p>
+        <div class="confirm-folio">
+          <span class="folio-label">Número de folio</span>
+          <span class="folio-num">{{ folioGenerado() }}</span>
+        </div>
+        <p class="confirm-hint">Guarda este folio para consultar el estado de tu solicitud.</p>
+        <div class="confirm-acciones">
+          <button class="btn-outline" (click)="vista.set('consulta')">Consultar estado</button>
+          <button class="btn-primary" (click)="nueva()">Nueva solicitud</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== VISTA: CONSULTA ===== -->
+    <div *ngIf="vista() === 'consulta'" class="consulta-wrapper">
+
+      <div class="form-nav">
+        <button class="btn-back" (click)="vista.set('info')">← Volver</button>
+        <h2 class="form-titulo">Consultar solicitud</h2>
+      </div>
+
+      <div class="consulta-card">
+        <label class="form-label">Ingresa tu número de folio</label>
+        <div class="consulta-row">
+          <input
+            type="text"
+            [(ngModel)]="folioConsulta"
+            class="input-field"
+            placeholder="Ej: ARCO-2026-0001"
+            (keydown.enter)="consultarFolio()"
+          />
+          <button
+            class="btn-primary"
+            (click)="consultarFolio()"
+            [disabled]="consultando || !folioConsulta.trim()"
+          >
+            {{ consultando ? 'Buscando...' : 'Consultar' }}
+          </button>
+        </div>
+
+        <div class="error-box" *ngIf="errorConsulta">{{ errorConsulta }}</div>
+
+        <!-- Resultado -->
+        <div class="resultado-consulta" *ngIf="resultadoConsulta">
+          <h3 class="resultado-titulo">Estado de tu solicitud</h3>
+          <div class="resultado-grid">
+            <div class="resultado-campo">
+              <span class="campo-label">Folio</span>
+              <span class="campo-valor">{{ resultadoConsulta.folio }}</span>
+            </div>
+            <div class="resultado-campo">
+              <span class="campo-label">Tipo</span>
+              <span class="campo-valor">{{ labelTipo(resultadoConsulta.tipo) }}</span>
+            </div>
+            <div class="resultado-campo">
+              <span class="campo-label">Estatus</span>
+              <span class="badge-estatus" [class]="'badge-' + resultadoConsulta.estatus">
+                {{ labelEstatus(resultadoConsulta.estatus) }}
+              </span>
+            </div>
+            <div class="resultado-campo">
+              <span class="campo-label">Fecha de recepción</span>
+              <span class="campo-valor">{{ (resultadoConsulta.fecha_creacion || resultadoConsulta.created_at) | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="resultado-campo">
+              <span class="campo-label">Fecha límite de respuesta</span>
+              <span class="campo-valor">{{ resultadoConsulta.fecha_limite | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </div>
+          <div class="resultado-respuesta" *ngIf="resultadoConsulta.respuesta">
+            <h4 class="resp-titulo">Respuesta del Ayuntamiento</h4>
+            <p class="resp-texto">{{ resultadoConsulta.respuesta }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
